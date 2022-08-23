@@ -36,6 +36,8 @@ class Blockchain {
         this.chain = [this.createGenesisBlock()];
         //The difficulty sets how secure the blockchain can be
         this.difficulty = 4;
+        this.pendingTransactions = [];
+        this.miningReward = 100;
     }
 
     createGenesisBlock() {
@@ -46,10 +48,38 @@ class Blockchain {
         return this.chain[this.chain.length - 1];
     }
 
-    addBlock(newBlock) {
-        newBlock.previousHash = this.getLatestBlock().hash;
-        newBlock.mineBlock(this.difficulty);
-        this.chain.push(newBlock);
+    minePendingTransactions(miningRewardAddress) {
+        let block = new Block(Date.now(), this.pendingTransactions);
+        block.mineBlock(this.difficulty);
+
+        console.log('Block succesfully mined!');
+        this.chain.push(block);
+
+        this.pendingTransactions = [
+            new Transaction(null, miningRewardAddress, this.miningReward)
+        ];
+    }
+
+    createTransaction(transaction) {
+        this.pendingTransactions.push(transaction);
+    }
+
+    getBalanceOfAddress(address) {
+        let balance = 0;
+
+        for(const block of this.chain) {
+            for(const trans of block.transactions) {
+                if(trans.fromAddress === address) {
+                    balance -= trans.amount;
+                }
+
+                if(trans.toAddress === address) {
+                    balance += trans.amount;
+                }
+            }
+        }
+
+        return balance;
     }
 
     isChainValid() {
@@ -72,11 +102,15 @@ class Blockchain {
 
 let myCoin = new Blockchain();
 
-console.log('Mining block 1...');
-myCoin.addBlock(new Block(1, "21/08/2022", { amount: 4 }));
+myCoin.createTransaction(new Transaction('address1', 'address2', 100));
+myCoin.createTransaction(new Transaction('address2', 'address1', 50));
 
-console.log('Mining block 2...');
-myCoin.addBlock(new Block(2, "22/08/2022", { amount: 10 }));
+console.log('\n Starting the miner...');
+myCoin.minePendingTransactions("piero's address");
 
+console.log(`\n Balance of Piero is ${myCoin.getBalanceOfAddress("piero's address")}`);
 
+console.log('\n Starting the miner...');
+myCoin.minePendingTransactions("piero's address");
 
+console.log(`\n Balance of Piero is ${myCoin.getBalanceOfAddress("piero's address")}`);
